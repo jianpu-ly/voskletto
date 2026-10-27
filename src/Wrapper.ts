@@ -1,7 +1,7 @@
 // Emscripten --pre-js: bundled to build/Wrapper.js and placed inside the generated module's scope by src/make
 
 import type { EpModeValue, LoadOptions, Model, Module as VosklettoModule, Recognizer as VosklettoRecognizer, SpkModel } from './voskletto.js';
-import { MODEL_CACHE, needsModelFetch } from './modelCache.js';
+import { MODEL_CACHE, maybeDecompressModel, needsModelFetch } from './modelCache.js';
 import { handleOutcome, type Outcome } from './results.js';
 import { createProcessorUrl, createTransferer } from './transferer.js';
 
@@ -82,7 +82,7 @@ if (!ENVIRONMENT_IS_WASM_WORKER) {
         // Caching already handled explicitly
         res = await fetch(url, { cache: 'no-store' });
         if (!res.ok) throw 'Unable to fetch model, status: ' + res.status;
-        res = new Response(res.body!.pipeThrough(new DecompressionStream('gzip')));
+        res = await maybeDecompressModel(res);
         await cache.put(storepath + '?' + id, res.clone());
       }
       else res = (await cache.match(req))!;
